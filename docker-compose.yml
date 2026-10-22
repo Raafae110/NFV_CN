@@ -1,0 +1,80 @@
+services:
+  dashboard:
+    build: .
+    container_name: nfv-dashboard
+    ports:
+      - "5000:5000"
+    environment:
+      FIREWALL_URL: http://firewall:8001
+      ROUTER_URL: http://router:8002
+      LOADBALANCER_URL: http://loadbalancer:8003
+    depends_on:
+      - firewall
+      - router
+      - loadbalancer
+    restart: unless-stopped
+
+  firewall:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.service
+    container_name: nfv-firewall
+    environment:
+      SERVICE_NAME: virtual-firewall
+      SERVICE_PORT: "8001"
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+
+  router:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.service
+    container_name: nfv-router
+    environment:
+      SERVICE_NAME: virtual-router
+      SERVICE_PORT: "8002"
+    ports:
+      - "8002:8002"
+    restart: unless-stopped
+
+  loadbalancer:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.service
+    container_name: nfv-loadbalancer
+    environment:
+      SERVICE_NAME: virtual-load-balancer
+      SERVICE_PORT: "8003"
+      BACKEND_A_URL: http://backend-a:9001
+      BACKEND_B_URL: http://backend-b:9002
+    depends_on:
+      - backend-a
+      - backend-b
+    ports:
+      - "8003:8003"
+    restart: unless-stopped
+
+  backend-a:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.backend
+    container_name: nfv-backend-a
+    environment:
+      BACKEND_NAME: backend-a
+      BACKEND_PORT: "9001"
+    expose:
+      - "9001"
+    restart: unless-stopped
+
+  backend-b:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.backend
+    container_name: nfv-backend-b
+    environment:
+      BACKEND_NAME: backend-b
+      BACKEND_PORT: "9002"
+    expose:
+      - "9002"
+    restart: unless-stopped
